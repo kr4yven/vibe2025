@@ -45,18 +45,14 @@
             background: none;
             border: none;
             font-size: 16px;
+            padding: 0;
+            margin: 0 2px;
         }
         .delete-btn {
             color: #ff4444;
         }
         .edit-btn {
             color: #4444ff;
-            margin-left: 5px;
-        }
-        .edit-input {
-            width: 100%;
-            padding: 5px;
-            box-sizing: border-box;
         }
     </style>
 </head>
@@ -136,23 +132,25 @@
     }
 
     function enableEdit(id) {
-        const textCell = document.querySelector(`.item-text[data-id="${id}"]`);
+        const textCell = document.querySelector(`td.item-text[data-id="${id}"]`);
         const currentText = textCell.textContent;
         
         textCell.innerHTML = `
-            <input type="text" class="edit-input" value="${currentText}" data-id="${id}">
-            <button onclick="saveEdit(${id})">Save</button>
-            <button onclick="cancelEdit(${id}, '${currentText}')">Cancel</button>
+            <input type="text" value="${currentText.replace(/"/g, '&quot;')}" 
+                   onkeypress="handleEditKey(event, ${id})" 
+                   style="width:100%;padding:2px;box-sizing:border-box;">
         `;
+        textCell.querySelector('input').focus();
     }
 
-    function cancelEdit(id, originalText) {
-        const textCell = document.querySelector(`.item-text[data-id="${id}"]`);
-        textCell.innerHTML = originalText;
+    function handleEditKey(event, id) {
+        if (event.key === 'Enter') {
+            saveEdit(id);
+        }
     }
 
     async function saveEdit(id) {
-        const input = document.querySelector(`.edit-input[data-id="${id}"]`);
+        const input = document.querySelector(`td.item-text[data-id="${id}"] input`);
         const newText = input.value.trim();
 
         if (!newText) {
