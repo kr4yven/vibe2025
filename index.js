@@ -18,7 +18,7 @@ const dbConfig = {
 async function retrieveListItems() {
     try {
       const connection = await mysql.createConnection(dbConfig);
-      const query = 'SELECT id, text FROM items';
+      const query = 'SELECT id, text FROM items ORDER BY id';
       const [rows] = await connection.execute(query);
       await connection.end();
       return rows;
@@ -41,6 +41,19 @@ async function addListItem(text) {
     }
 }
 
+async function deleteListItem(id) {
+    try {
+      const connection = await mysql.createConnection(dbConfig);
+      const query = 'DELETE FROM items WHERE id = ?';
+      const [result] = await connection.execute(query, [id]);
+      await connection.end();
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error deleting list item:', error);
+      throw error;
+    }
+}
+
 async function getHtmlRows() {
     const todoItems = await retrieveListItems();
     return todoItems.map(item => `
@@ -53,7 +66,10 @@ async function getHtmlRows() {
 }
 
 async function handleRequest(req, res) {
-    if (req.url === '/') {
+    const parsedUrl = url.parse(req.url);
+    const pathname = parsedUrl.pathname;
+
+    if (pathname === '/') {
         try {
             const html = await fs.promises.readFile(
                 path.join(__dirname, 'index.html'), 
@@ -69,7 +85,7 @@ async function handleRequest(req, res) {
             res.writeHead(500, { 'Content-Type': 'text/plain' });
             res.end('Error loading index.html');
         }
-    } else if (req.url === '/add' && req.method === 'POST') {
+    } else if (pathname === '/add' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => {
             body += chunk.toString();
@@ -90,6 +106,34 @@ async function handleRequest(req, res) {
                 console.error('Error adding item:', error);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, message: 'Error adding item' }));
+            }
+        });
+    } else if (pathname === '/delete' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        req.on('end', async () => {
+            try {
+                const { id } = querystring.parse(body);
+                if (!id) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: 'ID is required' }));
+                    return;
+                }
+                
+                const deleted = await deleteListItem(id);
+                if (deleted) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true }));
+                } else {
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: 'Item not found' }));
+                }
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: 'Error deleting item' }));
             }
         });
     } else {
