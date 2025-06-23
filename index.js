@@ -7,50 +7,62 @@ const querystring = require('querystring');
 
 const PORT = 3000;
 
-// Database connection settings
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: '814748219HhhZxc',
+    password: '',
     database: 'todolist',
 };
 
 async function retrieveListItems() {
     try {
-      const connection = await mysql.createConnection(dbConfig);
-      const query = 'SELECT id, text FROM items ORDER BY id';
-      const [rows] = await connection.execute(query);
-      await connection.end();
-      return rows;
+        const connection = await mysql.createConnection(dbConfig);
+        const query = 'SELECT id, text FROM items ORDER BY id';
+        const [rows] = await connection.execute(query);
+        await connection.end();
+        return rows;
     } catch (error) {
-      console.error('Error retrieving list items:', error);
-      throw error;
+        console.error('Error retrieving list items:', error);
+        throw error;
     }
 }
 
 async function addListItem(text) {
     try {
-      const connection = await mysql.createConnection(dbConfig);
-      const query = 'INSERT INTO items (text) VALUES (?)';
-      const [result] = await connection.execute(query, [text]);
-      await connection.end();
-      return result.insertId;
+        const connection = await mysql.createConnection(dbConfig);
+        const query = 'INSERT INTO items (text) VALUES (?)';
+        const [result] = await connection.execute(query, [text]);
+        await connection.end();
+        return result.insertId;
     } catch (error) {
-      console.error('Error adding list item:', error);
-      throw error;
+        console.error('Error adding list item:', error);
+        throw error;
     }
 }
 
 async function deleteListItem(id) {
     try {
-      const connection = await mysql.createConnection(dbConfig);
-      const query = 'DELETE FROM items WHERE id = ?';
-      const [result] = await connection.execute(query, [id]);
-      await connection.end();
-      return result.affectedRows > 0;
+        const connection = await mysql.createConnection(dbConfig);
+        const query = 'DELETE FROM items WHERE id = ?';
+        const [result] = await connection.execute(query, [id]);
+        await connection.end();
+        return result.affectedRows > 0;
     } catch (error) {
-      console.error('Error deleting list item:', error);
-      throw error;
+        console.error('Error deleting list item:', error);
+        throw error;
+    }
+}
+
+async function updateListItem(id, text) {
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+        const query = 'UPDATE items SET text = ? WHERE id = ?';
+        const [result] = await connection.execute(query, [text, id]);
+        await connection.end();
+        return result.affectedRows > 0;
+    } catch (error) {
+        console.error('Error updating list item:', error);
+        throw error;
     }
 }
 
@@ -59,8 +71,11 @@ async function getHtmlRows() {
     return todoItems.map(item => `
         <tr>
             <td>${item.id}</td>
-            <td>${item.text}</td>
-            <td><button class="delete-btn" onclick="removeItem(${item.id})">×</button></td>
+            <td class="item-text" data-id="${item.id}">${item.text}</td>
+            <td>
+                <button class="delete-btn" onclick="removeItem(${item.id})">×</button>
+                <button class="edit-btn" onclick="enableEdit(${item.id})">✎</button>
+            </td>
         </tr>
     `).join('');
 }
@@ -134,6 +149,34 @@ async function handleRequest(req, res) {
                 console.error('Error deleting item:', error);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, message: 'Error deleting item' }));
+            }
+        });
+    } else if (pathname === '/update' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        req.on('end', async () => {
+            try {
+                const { id, text } = querystring.parse(body);
+                if (!id || !text) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: 'ID and text are required' }));
+                    return;
+                }
+                
+                const updated = await updateListItem(id, text);
+                if (updated) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true }));
+                } else {
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: 'Item not found' }));
+                }
+            } catch (error) {
+                console.error('Error updating item:', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: 'Error updating item' }));
             }
         });
     } else {
