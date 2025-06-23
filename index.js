@@ -12,7 +12,7 @@ const SESSION_SECRET = 'your-secret-key-here';
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: '',
+    password: '814748219HhhZxc',
     database: 'todolist',
 };
 
