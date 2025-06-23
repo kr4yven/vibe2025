@@ -40,19 +40,27 @@
             padding: 8px;
             width: 20%;
         }
-        .delete-btn, .edit-btn {
+        .action-btn {
             cursor: pointer;
-            background: none;
-            border: none;
-            font-size: 16px;
-            padding: 0;
+            background: #f0f0f0;
+            color: #555;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: 24px;
+            height: 24px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 20px;
+            display: inline-block;
             margin: 0 2px;
         }
-        .delete-btn {
-            color: #ff4444;
+        .action-btn:hover {
+            background: #e0e0e0;
         }
-        .edit-btn {
-            color: #4444ff;
+        .edit-input {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
         }
     </style>
 </head>
@@ -136,9 +144,8 @@
         const currentText = textCell.textContent;
         
         textCell.innerHTML = `
-            <input type="text" value="${currentText.replace(/"/g, '&quot;')}" 
-                   onkeypress="handleEditKey(event, ${id})" 
-                   style="width:100%;padding:2px;box-sizing:border-box;">
+            <input type="text" class="edit-input" value="${currentText.replace(/"/g, '&quot;')}" 
+                   onkeydown="handleEditKey(event, ${id})">
         `;
         textCell.querySelector('input').focus();
     }
@@ -146,6 +153,8 @@
     function handleEditKey(event, id) {
         if (event.key === 'Enter') {
             saveEdit(id);
+        } else if (event.key === 'Escape') {
+            window.location.reload();
         }
     }
 
