@@ -11,7 +11,7 @@ const PORT = 3000;
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: '',
+    password: '814748219HhhZxc',
     database: 'todolist',
 };
 
