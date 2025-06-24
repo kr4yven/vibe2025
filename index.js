@@ -172,10 +172,8 @@ async function serveLoginPage(res, isRegister = false) {
             </script>
         `;
         
-        html = html.replace('<body>', `<body>${authForm}`);
-        html = html.replace('<h2 style="text-align: center;">To-Do List</h2>', '');
-        html = html.replace('<table id="todoList">', '');
-        html = html.replace('<div class="add-form">', '');
+        // Полностью заменяем содержимое body на форму авторизации
+        html = html.replace(/<body>[\s\S]*<\/body>/, `<body>${authForm}</body>`);
         
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(html);
