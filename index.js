@@ -117,76 +117,127 @@ async function updateListItem(id, text, userId) {
 
 async function serveLoginPage(res, isRegister = false) {
     try {
-        let html = await fs.promises.readFile(path.join(__dirname, 'index.html'), 'utf8');
-        
-        const authForm = `
-            <div style="text-align: center; margin: 50px auto; width: 300px; background: #f9f9f9; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                <h2>${isRegister ? 'Register' : 'Login'}</h2>
-                <form onsubmit="handleAuth(event, ${isRegister})" style="margin-top: 20px;">
-                    <input type="text" placeholder="Username" id="auth-username" style="width: 100%; padding: 8px; margin-bottom: 10px;"><br>
-                    <input type="password" placeholder="Password" id="auth-password" style="width: 100%; padding: 8px; margin-bottom: 10px;"><br>
-                    ${isRegister ? '<input type="password" placeholder="Confirm Password" id="auth-confirm" style="width: 100%; padding: 8px; margin-bottom: 10px;"><br>' : ''}
-                    <button type="submit" style="padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer;">
-                        ${isRegister ? 'Register' : 'Login'}
-                    </button>
-                </form>
-                <p style="margin-top: 15px;">
-                    ${isRegister ? 'Already have an account? <a href="/login" style="color: #4CAF50;">Login</a>' : 
-                                  'Need an account? <a href="/register" style="color: #4CAF50;">Register</a>'}
-                </p>
-            </div>
-            <script>
-                async function handleAuth(event, isRegister) {
-                    event.preventDefault();
-                    const username = document.getElementById('auth-username').value;
-                    const password = document.getElementById('auth-password').value;
-                    
-                    if (isRegister) {
-                        const confirm = document.getElementById('auth-confirm').value;
-                        if (password !== confirm) {
+        const loginHtml = `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>${isRegister ? 'Register' : 'Login'} - To-Do List</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        background-color: #f5f5f5;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                    }
+                    .auth-container {
+                        background: white;
+                        padding: 20px;
+                        border-radius: 5px;
+                        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                        width: 300px;
+                    }
+                    .auth-container h2 {
+                        text-align: center;
+                        color: #333;
+                        margin-top: 0;
+                    }
+                    .auth-form input {
+                        width: 100%;
+                        padding: 10px;
+                        margin: 10px 0;
+                        box-sizing: border-box;
+                        border: 1px solid #ddd;
+                        border-radius: 3px;
+                    }
+                    .auth-form button {
+                        width: 100%;
+                        padding: 10px;
+                        background-color: #4CAF50;
+                        color: white;
+                        border: none;
+                        border-radius: 3px;
+                        cursor: pointer;
+                        margin-top: 10px;
+                    }
+                    .switch-auth {
+                        text-align: center;
+                        margin-top: 15px;
+                        font-size: 14px;
+                    }
+                    .switch-auth a {
+                        color: #4CAF50;
+                        text-decoration: none;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="auth-container">
+                    <h2>${isRegister ? 'Register' : 'Login'}</h2>
+                    <form class="auth-form" onsubmit="handleAuth(event)">
+                        <input type="text" placeholder="Username" required>
+                        <input type="password" placeholder="Password" required>
+                        ${isRegister ? '<input type="password" placeholder="Confirm Password" required>' : ''}
+                        <button type="submit">${isRegister ? 'Register' : 'Login'}</button>
+                    </form>
+                    <div class="switch-auth">
+                        ${isRegister ? 'Already have an account? <a href="/login">Login</a>' : 
+                                      'Need an account? <a href="/register">Register</a>'}
+                    </div>
+                </div>
+
+                <script>
+                    async function handleAuth(event) {
+                        event.preventDefault();
+                        const inputs = event.target.querySelectorAll('input');
+                        const username = inputs[0].value;
+                        const password = inputs[1].value;
+                        const isRegister = window.location.pathname === '/register';
+                        
+                        if (isRegister && inputs[2].value !== password) {
                             alert('Passwords do not match');
                             return;
                         }
-                    }
-                    
-                    try {
-                        const response = await fetch(isRegister ? '/register' : '/login', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                            },
-                            body: 'username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password)
-                        });
-                        
-                        const result = await response.json();
-                        if (result.success) {
-                            window.location.href = '/';
-                        } else {
-                            alert(result.message || 'Authentication failed');
+
+                        try {
+                            const response = await fetch(window.location.pathname, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                },
+                                body: 'username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password)
+                            });
+                            
+                            const result = await response.json();
+                            if (result.success) {
+                                window.location.href = '/';
+                            } else {
+                                alert(result.message || 'Authentication failed');
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                            alert('Authentication failed');
                         }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('Authentication failed');
                     }
-                }
-            </script>
+                </script>
+            </body>
+            </html>
         `;
-        
-        html = html.replace('<body>', `<body>${authForm}`);
-        html = html.replace('<h2 style="text-align: center;">To-Do List</h2>', '');
-        html = html.replace('<table id="todoList">', '');
-        html = html.replace('<div class="add-form">', '');
-        
+
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end(html);
+        res.end(loginHtml);
     } catch (err) {
         console.error(err);
         res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end('Error loading page');
+        res.end('Error loading login page');
     }
 }
 
-async function serveTodoList(res, userId, username) {
+async function serveTodoPage(res, userId, username) {
     try {
         let html = await fs.promises.readFile(path.join(__dirname, 'index.html'), 'utf8');
         
@@ -201,6 +252,7 @@ async function serveTodoList(res, userId, username) {
             </tr>
         `).join('');
         
+        // Добавляем только строку с информацией о пользователе
         const userHeader = `<div style="text-align: right; margin: 10px 15% 0 0;">
             Logged in as <strong>${username}</strong> | 
             <a href="/logout" style="color: #ff4444;">Logout</a>
@@ -214,7 +266,7 @@ async function serveTodoList(res, userId, username) {
     } catch (err) {
         console.error(err);
         res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end('Error loading page');
+        res.end('Error loading todo page');
     }
 }
 
